@@ -13,37 +13,21 @@ namespace MageWorx\ChangeTimezoneOptions\Plugin;
 class UpdateTimezoneLabels
 {
     /**
-     * @var \Magento\Framework\Locale\ResolverInterface
+     * @param \Magento\Framework\Locale\ListsInterface $subject
+     * @param \Closure $proceed
+     * @return array
      */
-    protected $localeResolver;
+    public function aroundGetOptionTimezones(\Magento\Framework\Locale\ListsInterface $subject, \Closure $proceed) {
+        $options = $proceed();
 
-    /**
-     * UpdateTimezoneLabels constructor.
-     *
-     * @param \Magento\Framework\Locale\ResolverInterface $localeResolver
-     */
-    public function __construct(
-        \Magento\Framework\Locale\ResolverInterface $localeResolver
-    ) {
-        $this->localeResolver = $localeResolver;
-    }
+        foreach ($options as &$option) {
+            if (empty($option['value'])) {
+                continue;
+            }
 
-    public function aroundGetOptionTimezones($subject, $proceed) {
-        $options = [];
-        $locale = $this->localeResolver->getLocale();
-        $zones = \DateTimeZone::listIdentifiers(\DateTimeZone::ALL) ?: [];
-        foreach ($zones as $code) {
-            $offset = \IntlTimeZone::createTimeZone($code)->getRawOffset() / (1000 * 60 * 60);
-            $options[] = [
-                'label' => \IntlTimeZone::createTimeZone($code)
-                                        ->getDisplayName(false, \IntlTimeZone::DISPLAY_LONG, $locale) .
-                    ' (' . $code . ') ' .
-                     ' [' . $offset . ']'
-                    ,
-                'value' => $code,
-                'offset' => $offset
-            ];
+            $option['offset'] = $this->getOffsetByCode($option['value']);
         }
+
         return $this->_sortOptionArray($options);
     }
 
@@ -65,5 +49,16 @@ class UpdateTimezoneLabels
         asort($offsets);
 
         return $offsets;
+    }
+
+    /**
+     * Get time offset by timezone code
+     *
+     * @param string $code
+     * @return float|int
+     */
+    protected function getOffsetByCode(string $code)
+    {
+        return \IntlTimeZone::createTimeZone($code)->getRawOffset() / (1000 * 60 * 60);
     }
 }
