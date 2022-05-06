@@ -3,9 +3,9 @@
  * Copyright © MageWorx. All rights reserved.
  * See LICENSE.txt for license details.
  */
+declare(strict_types=1);
 
 namespace MageWorx\ChangeTimezoneOptions\Plugin;
-
 
 /**
  * Class UpdateTimezoneLabels
@@ -14,12 +14,10 @@ class UpdateTimezoneLabels
 {
     /**
      * @param \Magento\Framework\Locale\ListsInterface $subject
-     * @param \Closure $proceed
+     * @param array $options
      * @return array
      */
-    public function aroundGetOptionTimezones(\Magento\Framework\Locale\ListsInterface $subject, \Closure $proceed) {
-        $options = $proceed();
-
+    public function afterGetOptionTimezones(\Magento\Framework\Locale\ListsInterface $subject, array $options) {
         foreach ($options as &$option) {
             if (empty($option['value'])) {
                 continue;
@@ -35,12 +33,13 @@ class UpdateTimezoneLabels
      * @param array $option
      * @return array
      */
-    protected function _sortOptionArray($option)
+    protected function _sortOptionArray(array $option): array
     {
         $offsets = [];
         foreach ($option as $key => $item) {
-            $offsets[$item['offset']]['label'] = $item['offset'];
-            $offsets[$item['offset']]['value'][] = [
+            $offset = (string)$item['offset'];
+            $offsets[$offset]['label'] = $offset;
+            $offsets[$offset]['value'][] = [
                 'value' => $item['value'],
                 'label' => $item['label']
             ];
@@ -55,9 +54,9 @@ class UpdateTimezoneLabels
      * Get time offset by timezone code
      *
      * @param string $code
-     * @return float|int
+     * @return float
      */
-    protected function getOffsetByCode(string $code)
+    protected function getOffsetByCode(string $code): float
     {
         return \IntlTimeZone::createTimeZone($code)->getRawOffset() / (1000 * 60 * 60);
     }
